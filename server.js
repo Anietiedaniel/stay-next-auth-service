@@ -1,3 +1,10 @@
+if (process.env.NODE_ENV !== "production") {
+  // Only load dotenv in development
+  const dotenv = await import("dotenv");
+  dotenv.config();
+}
+
+
 import app from './app.js';
 import connectDB from './config/db.js';
 
