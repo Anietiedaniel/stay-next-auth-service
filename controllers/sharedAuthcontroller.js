@@ -13,7 +13,6 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // =============================================
 // REGISTER (Default role = "visitor") + Email Verification
-// =============================================
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -34,27 +33,11 @@ export const register = async (req, res) => {
       role: "visitor",
       isGoogleUser: false,
       isNewUser: true,
-      isVerified: false, // ✅ start as unverified
-    });
-
-    // 🔑 Generate verification token
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
-
-    user.verifyEmailToken = hashedToken;
-    user.verifyEmailExpire = Date.now() + 60 * 60 * 1000; // 1 hour expiry
-    await user.save({ validateBeforeSave: false });
-
-    // ✉️ Send verification email
-    const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`;
-    await sendEmail({
-      to: user.email,
-      subject: "Verify Your Email",
-      html: emailTemplate("verifyEmail", user, null, { verificationLink }),
+      isVerified: true, // ✅ Mark verified immediately
     });
 
     res.status(201).json({
-      message: "Registration successful. Please verify your email.",
+      message: "Registration successful. You can login now.",
       user: {
         id: user._id,
         name: user.name,
@@ -188,7 +171,27 @@ export const googleLogin = async (req, res) => {
         role: "visitor",
         isGoogleUser: true,
         isNewUser: true,
+        isVerified: false, // ❌ Start unverified
       });
+
+      // 🔑 Send verification email
+      try {
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        const hashedToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+
+        user.verifyEmailToken = hashedToken;
+        user.verifyEmailExpire = Date.now() + 60 * 60 * 1000; // 1 hour
+        await user.save({ validateBeforeSave: false });
+
+        const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`;
+        await sendEmail({
+          to: user.email,
+          subject: "Verify Your Email",
+          html: emailTemplate("verifyEmail", user, null, { verificationLink }),
+        });
+      } catch (err) {
+        console.error("⚠️ Google email sending failed:", err.message);
+      }
     }
 
     const jwtToken = generateToken(user);
@@ -200,7 +203,7 @@ export const googleLogin = async (req, res) => {
     });
 
     res.status(200).json({
-      message: "Google login successful",
+      message: "Google login successful. Please verify your email.",
       user: {
         id: user._id,
         name: user.name,
@@ -214,6 +217,7 @@ export const googleLogin = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // =============================================
 // LOGOUT
