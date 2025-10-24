@@ -1,5 +1,9 @@
-// utils/sendEmail.js
 import nodemailer from 'nodemailer';
+
+// ⚠️ Make sure EMAIL_USER & EMAIL_PASS are set in .env
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.warn("⚠️ EMAIL_USER or EMAIL_PASS not defined in env");
+}
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -10,17 +14,19 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
- * Sends an email using Nodemailer
- * @param {Object} options - Mail options
- * @param {string} options.to - Recipient email
- * @param {string} options.subject - Email subject
- * @param {string} options.html - Email HTML body
+ * Sends an email
  */
 export const sendEmail = async ({ to, subject, html }) => {
-  await transporter.sendMail({
-    from: `"Stay Next Real Estate" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from: `"Stay Next Real Estate" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html,
+    });
+    console.log(`✉️ Email sent to ${to}`);
+  } catch (err) {
+    console.error("🔥 sendEmail error:", err);
+    throw err;
+  }
 };
