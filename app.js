@@ -15,7 +15,7 @@ app.use(cookieParser());
 
 // ===== CORS Setup =====
 // Allow credentials + exact origin match
-const allowedOrigin = process.env.CLIENT_URL;
+const allowedOrigin = "https://stay-next-frontend-production.up.railway.app";
 
 app.use(
   cors({
@@ -30,7 +30,7 @@ app.use(
       }
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Added "PATCH" here
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
