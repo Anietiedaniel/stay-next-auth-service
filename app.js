@@ -1,3 +1,4 @@
+// app.js
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -8,36 +9,45 @@ import authRoutes from "./routes/allAuthRoutes.js";
 const __dirname = path.resolve();
 const app = express();
 
+// ===== Middleware =====
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Allow frontend origin
+// ===== CORS Setup =====
+// Allow credentials + exact origin match
+const allowedOrigin = process.env.CLIENT_URL;
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+      // allow requests with no origin (like Postman)
+      if (!origin) return callback(null, true);
+
+      if (origin === allowedOrigin) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy: Origin ${origin} not allowed`));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// ===== API Route =====
+// ===== API Routes =====
 app.use("/api/auth", authRoutes);
 
+// ===== Optional Frontend Serving =====
 /* 
-// ===== Serve frontend (DISABLED for backend-only deployment) =====
 const frontendPath = path.join(__dirname, "../../frontend/dist");
 app.use(express.static(frontendPath));
-
-// ===== React Router fallback =====
-app.use((req, res, next) => {
-  if (req.method === "GET" && !req.path.startsWith("/api")) {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  } else {
-    next();
-  }
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
 });
 */
 
-// ✅ Health check route (optional, helps Render verify service is up)
+// ===== Health check =====
 app.get("/", (req, res) => {
   res.send("Auth Service is running 🚀");
 });
