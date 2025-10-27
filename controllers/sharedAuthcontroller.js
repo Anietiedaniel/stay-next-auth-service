@@ -7,6 +7,7 @@ import { sendEmail } from "../utils/sendEmail.js";
 import { emailTemplate } from "../utils/emailTemplates.js";
 import { generateToken } from "../utils/jwt.js";
 
+
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const isProduction = process.env.NODE_ENV === "production";
 
