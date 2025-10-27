@@ -10,7 +10,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const sendEmail = async ({ to, subject, html }) => {
   try {
     const res = await resend.emails.send({
-      from: "StayNext <noreply@staynext.com>", // change after domain verify
+      from: "StayNext <noreply@resend.dev>", // change after domain verify
       to,
       subject,
       html,
