@@ -1,15 +1,15 @@
-import User from "../models/User.js";
-import bcrypt from "bcrypt";
-import crypto from "crypto";
-import jwt from "jsonwebtoken";
-import { OAuth2Client } from "google-auth-library";
-import { sendEmail } from "../utils/sendEmail.js";
-import { emailTemplate } from "../utils/emailTemplates.js";
-import { generateToken } from "../utils/jwt.js";
-
+import User from '../models/User.js';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
+import { sendEmail } from '../utils/sendEmail.js';
+import { emailTemplate } from '../utils/emailTemplates.js';
+import { generateToken } from '../utils/jwt.js'; // ✅ imported external token util
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction = process.env.NODE_ENV === 'production';
+
 
 // =============================================
 // REGISTER (Default role = "visitor") + Email Verification
@@ -17,6 +17,7 @@ const isProduction = process.env.NODE_ENV === "production";
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+
     if (!name || !email || !password)
       return res.status(400).json({ message: "All fields are required" });
 
@@ -33,7 +34,7 @@ export const register = async (req, res) => {
       role: "visitor",
       isGoogleUser: false,
       isNewUser: true,
-      isVerified: false,
+      isVerified: false, // ✅ start as unverified
     });
 
     // 🔑 Generate verification token
@@ -41,14 +42,14 @@ export const register = async (req, res) => {
     const hashedToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
 
     user.verifyEmailToken = hashedToken;
-    user.verifyEmailExpire = Date.now() + 60 * 60 * 1000; // 1 hour
+    user.verifyEmailExpire = Date.now() + 60 * 60 * 1000; // 1 hour expiry
     await user.save({ validateBeforeSave: false });
 
     // ✉️ Send verification email
     const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`;
     await sendEmail({
       to: user.email,
-      subject: "Verify Your Email - Stay Next Real Estate",
+      subject: "Verify Your Email",
       html: emailTemplate("verifyEmail", user, null, { verificationLink }),
     });
 
@@ -69,46 +70,57 @@ export const register = async (req, res) => {
   }
 };
 
+
 // =============================================
 // VERIFY EMAIL
-// =============================================
 export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
     if (!token) return res.status(400).json({ message: "Invalid or missing token" });
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
     const user = await User.findOne({
       verifyEmailToken: hashedToken,
       verifyEmailExpire: { $gt: Date.now() },
     });
 
-    if (!user)
+    if (!user) {
+      const alreadyVerifiedUser = await User.findOne({ isVerified: true, verifyEmailToken: hashedToken });
+      if (alreadyVerifiedUser) {
+        return res.status(200).json({ message: "Email already verified", userId: alreadyVerifiedUser._id });
+      }
       return res.status(400).json({ message: "Token invalid or expired" });
+    }
 
     user.isVerified = true;
     user.verifyEmailToken = undefined;
     user.verifyEmailExpire = undefined;
     await user.save();
 
-    // ✅ Optional: Auto login after verification
+    // 🔑 Generate JWT cookie for temporary “logged-in” state
     const tempToken = generateToken(user);
     res.cookie("token", tempToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? "None" : "Lax",
-      maxAge: 5 * 60 * 1000,
+      maxAge: 5 * 60 * 1000, // 5 minutes temporary token
     });
 
-    res.status(200).json({ message: "Email verified successfully", userId: user._id });
+    res.status(200).json({ 
+      message: "Email verified successfully",
+      userId: user._id 
+    });
+
   } catch (err) {
     console.error("🔥 Verify email error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
+
 // =============================================
-// LOGIN
+// LOGIN (Cookie-based JWT)
 // =============================================
 export const login = async (req, res) => {
   try {
@@ -122,11 +134,11 @@ export const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
-
     if (!user.isVerified)
-      return res.status(403).json({ message: "Please verify your email before logging in" });
+  return res.status(403).json({ message: "Please verify your email before logging in" });
 
-    const token = generateToken(user);
+
+    const token = generateToken(user); // ✅ use external token generator
     res.cookie("token", token, {
       httpOnly: true,
       secure: isProduction,
@@ -175,7 +187,6 @@ export const googleLogin = async (req, res) => {
         profileImage: picture,
         role: "visitor",
         isGoogleUser: true,
-        isVerified: true, // ✅ Google users are auto-verified
         isNewUser: true,
       });
     }
@@ -217,14 +228,15 @@ export const logout = (req, res) => {
 };
 
 // =============================================
-// GET ME
+// GET ME (via cookie token)
 // =============================================
 export const getMe = async (req, res) => {
   try {
     const token = req.cookies.token;
     if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "mysecret");
+
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -252,10 +264,11 @@ export const forgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${token}`;
+    console.log(resetLink)
     await sendEmail({
       to: user.email,
       subject: "Password Reset Request",
-      html: emailTemplate("resetPassword", user, null, { resetLink }),
+      html: emailTemplate("resetPassword", user,null, { resetLink }),
     });
 
     res.status(200).json({ message: "Password reset email sent" });
@@ -295,19 +308,18 @@ export const resetPassword = async (req, res) => {
 };
 
 // =============================================
-// SET ROLE
+// SET ROLE (User chooses their role ONCE)
 // =============================================
 export const setRole = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.userId; // ✅ from protect middleware
     const { role } = req.body;
 
     if (!role) return res.status(400).json({ message: "Role is required" });
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
-    if (!user.isNewUser)
-      return res.status(400).json({ message: "Role has already been set" });
+    if (!user.isNewUser) return res.status(400).json({ message: "Role has already been set" });
 
     user.role = role;
     user.isNewUser = false;
@@ -328,3 +340,4 @@ export const setRole = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
