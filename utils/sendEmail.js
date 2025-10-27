@@ -1,32 +1,24 @@
-import nodemailer from 'nodemailer';
+// utils/sendEmail.js
+import { Resend } from "resend";
 
-// ⚠️ Make sure EMAIL_USER & EMAIL_PASS are set in .env
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.warn("⚠️ EMAIL_USER or EMAIL_PASS not defined in env");
-}
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * Sends an email
+ * Send email using Resend
+ * @param {{to: string, subject: string, html: string}} param0
  */
 export const sendEmail = async ({ to, subject, html }) => {
   try {
-    await transporter.sendMail({
-      from: `"Stay Next Real Estate" <${process.env.EMAIL_USER}>`,
+    const res = await resend.emails.send({
+      from: "StayNext <noreply@staynext.com>", // change after domain verify
       to,
       subject,
       html,
     });
-    console.log(`✉️ Email sent to ${to}`);
+    console.log("✅ Resend email sent:", res.id);
+    return res;
   } catch (err) {
-    console.error("🔥 sendEmail error:", err);
+    console.error("🔥 Resend sendEmail error:", err?.message || err);
     throw err;
   }
 };
