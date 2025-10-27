@@ -38,24 +38,6 @@ app.use(
 // ===== API Routes =====
 app.use("/api/auth", authRoutes);
 
-import { sendEmail } from "./utils/sendEmail.js";
-import { emailTemplate } from "./utils/emailTemplate.js";
-
-app.get("/test-email", async (req, res) => {
-  try {
-    await sendEmail({
-      to: "ubongdavid230@gmail.com",
-      subject: "Test from Stay Next",
-      html: emailTemplate("verifyEmail", { name: "David", email: "anietienteabasi123@gmail.com" }, null, { verificationLink: "https://stay-next.com/verify" }),
-    });
-    res.send("✅ Email sent successfully!");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("❌ Test failed");
-  }
-});
-
-
 // ===== Optional Frontend Serving =====
 /* 
 const frontendPath = path.join(__dirname, "../../frontend/dist");

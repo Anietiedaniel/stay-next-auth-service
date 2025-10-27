@@ -1,23 +1,32 @@
-import brevo from "@getbrevo/brevo";
+import nodemailer from 'nodemailer';
 
-const client = new brevo.TransactionalEmailsApi();
-client.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
+// ⚠️ Make sure EMAIL_USER & EMAIL_PASS are set in .env
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.warn("⚠️ EMAIL_USER or EMAIL_PASS not defined in env");
+}
 
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+/**
+ * Sends an email
+ */
 export const sendEmail = async ({ to, subject, html }) => {
   try {
-    const email = {
-      sender: {
-        name: "Stay Next Real Estate",
-        email: "anietienteabasi123@mail.com", // must be verified in Brevo
-      },
-      to: [{ email: to }],
+    await transporter.sendMail({
+      from: `"Stay Next Real Estate" <${process.env.EMAIL_USER}>`,
+      to,
       subject,
-      htmlContent: html,
-    };
-
-    const response = await client.sendTransacEmail(email);
-    console.log("✅ Email sent successfully:", response);
-  } catch (error) {
-    console.error("❌ Brevo email failed:", error.response?.body || error.message);
+      html,
+    });
+    console.log(`✉️ Email sent to ${to}`);
+  } catch (err) {
+    console.error("🔥 sendEmail error:", err);
+    throw err;
   }
 };
