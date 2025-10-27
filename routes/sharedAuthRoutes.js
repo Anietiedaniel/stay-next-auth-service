@@ -25,15 +25,15 @@ const router = express.Router();
 
 /* ---------------------- 🔐 Shared User Authentication Routes ---------------------- */
 router.post('/register', validate(registerSchema), register);
-// router.get('/verify-email', verifyEmail);
-// router.post('/google', googleLogin);
-// router.patch('/set-role', protect, setRole);
-// router.post('/login', validate(loginSchema), login);
-// router.post('/logout', logout);
-// router.get('/getMe', protect, getMe);
+router.get('/verify-email', verifyEmail);
+router.post('/google', googleLogin);
+router.patch('/set-role', protect, setRole);
+router.post('/login', validate(loginSchema), login);
+router.post('/logout', logout);
+router.get('/getMe', protect, getMe);
 
 /* ---------------------- 🔑 Password Reset Routes ---------------------- */
-// router.post('/forgot-password', validate(forgotSchema), forgotPassword);
-// router.post('/reset-password/:token', validate(resetSchema), resetPassword);
+router.post('/forgot-password', validate(forgotSchema), forgotPassword);
+router.post('/reset-password/:token', validate(resetSchema), resetPassword);
 
 export default router;
