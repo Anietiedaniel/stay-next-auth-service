@@ -1,18 +1,28 @@
 // utils/sendEmail.js
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import nodemailer from "nodemailer";
 
 export const sendEmail = async ({ to, subject, html }) => {
   try {
-    await resend.emails.send({
-      from: "Stay Next <onboarding@resend.dev>", // You can change this later to a verified domain
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      secure: false, // TLS for 587
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Stay Next Real Estate" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
-    });
-    console.log(`✅ Email sent to ${to}`);
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent:", info.messageId);
   } catch (error) {
-    console.error("❌ Email send error:", error);
+    console.error("❌ Email sending failed:", error.message);
   }
 };
