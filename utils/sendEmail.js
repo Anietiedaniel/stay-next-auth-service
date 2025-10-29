@@ -5,7 +5,7 @@ export const sendEmail = async (to, subject, html) => {
     console.log("📧 Preparing to send email via Brevo API...");
 
     const data = {
-      sender: { name: "Auth System", email: "anietienteabasi12345@gmail.com" },
+      sender: { name: "StayNext", email: "anietienteabasi12345@gmail.com" },
       to: [{ email: to }],
       subject,
       htmlContent: html,
