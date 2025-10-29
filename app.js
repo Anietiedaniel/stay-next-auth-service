@@ -48,8 +48,8 @@ app.get("*", (req, res) => {
 */
 
 // ===== Health check =====
-app.get("/", (req, res) => {
-  res.send("Auth Service is running 🚀");
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", time: new Date().toISOString() });
 });
 
 export default app;
