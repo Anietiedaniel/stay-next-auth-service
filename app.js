@@ -1,4 +1,3 @@
-// app.js
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -14,23 +13,28 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ===== CORS Setup =====
-// Allow credentials + exact origin match
-const allowedOrigin = "https://stay-next-frontend-production.up.railway.app"
+const allowedOrigins = [
+  "https://stay-next-frontend-production.up.railway.app",
+  "https://stay-next-frontend.onrender.com",
+  "http://localhost:5173",
+  "https://stay-next-frontend.netlify.app", // example extra
+  "https://stay-next-frontend.vercel.app",  // example extra
+];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (like Postman)
+      // allow requests with no origin (e.g., Postman)
       if (!origin) return callback(null, true);
 
-      if (origin === allowedOrigin) {
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`CORS policy: Origin ${origin} not allowed`));
       }
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Added "PATCH" here
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -39,7 +43,7 @@ app.use(
 app.use("/api/auth", authRoutes);
 
 // ===== Optional Frontend Serving =====
-/* 
+/*
 const frontendPath = path.join(__dirname, "../../frontend/dist");
 app.use(express.static(frontendPath));
 app.get("*", (req, res) => {
