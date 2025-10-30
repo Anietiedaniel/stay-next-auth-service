@@ -15,7 +15,7 @@ app.use(cookieParser());
 
 // ===== CORS Setup =====
 // Allow credentials + exact origin match
-const allowedOrigin = "https://stay-next-frontend-production.up.railway.app";
+const allowedOrigin = "https://stay-next-frontend-production.up.railway.app"
 
 app.use(
   cors({
@@ -48,8 +48,8 @@ app.get("*", (req, res) => {
 */
 
 // ===== Health check =====
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok", time: new Date().toISOString() });
+app.get("/", (req, res) => {
+  res.send("Auth Service is running 🚀");
 });
 
 export default app;
