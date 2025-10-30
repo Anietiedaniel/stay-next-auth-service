@@ -10,20 +10,25 @@ dotenv.config();
 const __dirname = path.resolve();
 const app = express();
 
+// ===== Middleware =====
 app.use(express.json());
 app.use(cookieParser());
 
 // ===== Dynamic CORS Setup =====
-const allowedOrigins = process.env.CLIENT_URL?.split(",") || [];
+// Example .env value:
+// CLIENT_URLS=http://localhost:5173,https://stay-next-frontend-production.up.railway.app,https://stay-next-frontend.onrender.com
+const allowedOrigins = process.env.CLIENT_URLS?.split(",").map(url => url.trim()) || [];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Allow Postman & backend calls
+      // Allow requests with no origin (e.g., Postman, same-server calls)
+      if (!origin) return callback(null, true);
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log(`❌ Blocked by CORS: ${origin}`);
+        console.log(`❌ CORS blocked: ${origin}`);
         callback(new Error(`CORS policy: Origin ${origin} not allowed`));
       }
     },
@@ -33,10 +38,26 @@ app.use(
   })
 );
 
+// ====== Force overwrite headers if Render duplicates them ======
+app.use((req, res, next) => {
+  res.removeHeader("Access-Control-Allow-Origin");
+  next();
+});
+
 // ===== API Routes =====
 app.use("/api/auth", authRoutes);
 
-// ===== Health check =====
+// ===== Optional Frontend Serving =====
+// (uncomment only if serving frontend from same backend)
+ /*
+const frontendPath = path.join(__dirname, "../../frontend/dist");
+app.use(express.static(frontendPath));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
+*/
+
+// ===== Health Check =====
 app.get("/", (req, res) => {
   res.send("Auth Service is running 🚀");
 });
