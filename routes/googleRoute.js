@@ -4,18 +4,19 @@ import { oauth2Client, scopes } from "../config/google.js";
 const router = express.Router();
 
 // Step A: Redirect to Google login
-router.get("/auth/google", (req, res) => {
+router.get("/logina", (req, res) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: scopes,
     prompt: "consent",
     redirect_uri: process.env.GOOGLE_REDIRECT_URI, // ✅ Add this
   });
+  console.log(url.redirect_uri)
   res.redirect(url);
 });
 
 // Step B: Google callback
-router.get("/auth/google/callback", async (req, res) => {
+router.get("/logina/callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send("No code provided");
 
